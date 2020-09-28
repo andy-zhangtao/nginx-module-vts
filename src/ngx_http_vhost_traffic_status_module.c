@@ -3,7 +3,6 @@
  * Copyright (C) YoungJoo Kim (vozlt)
  */
 
-
 #include "ngx_http_vhost_traffic_status_module.h"
 #include "ngx_http_vhost_traffic_status_variables.h"
 #include "ngx_http_vhost_traffic_status_shm.h"
@@ -13,7 +12,6 @@
 #include "ngx_http_vhost_traffic_status_set.h"
 #include "ngx_http_vhost_traffic_status_dump.h"
 
-
 static ngx_int_t ngx_http_vhost_traffic_status_handler(ngx_http_request_t *r);
 
 static void ngx_http_vhost_traffic_status_rbtree_insert_value(
@@ -22,197 +20,189 @@ static void ngx_http_vhost_traffic_status_rbtree_insert_value(
 static ngx_int_t ngx_http_vhost_traffic_status_init_zone(
     ngx_shm_zone_t *shm_zone, void *data);
 static char *ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf,
-    ngx_command_t *cmd, void *conf);
+                                                ngx_command_t *cmd, void *conf);
 static char *ngx_http_vhost_traffic_status_dump(ngx_conf_t *cf,
-    ngx_command_t *cmd, void *conf);
+                                                ngx_command_t *cmd, void *conf);
 static char *ngx_http_vhost_traffic_status_filter_max_node(ngx_conf_t *cf,
-    ngx_command_t *cmd, void *conf);
+                                                           ngx_command_t *cmd, void *conf);
 static char *ngx_http_vhost_traffic_status_average_method(ngx_conf_t *cf,
-    ngx_command_t *cmd, void *conf);
+                                                          ngx_command_t *cmd, void *conf);
 static char *ngx_http_vhost_traffic_status_histogram_buckets(ngx_conf_t *cf,
-    ngx_command_t *cmd, void *conf);
+                                                             ngx_command_t *cmd, void *conf);
 
 static ngx_int_t ngx_http_vhost_traffic_status_preconfiguration(ngx_conf_t *cf);
 static ngx_int_t ngx_http_vhost_traffic_status_init(ngx_conf_t *cf);
 static void *ngx_http_vhost_traffic_status_create_main_conf(ngx_conf_t *cf);
 static char *ngx_http_vhost_traffic_status_init_main_conf(ngx_conf_t *cf,
-    void *conf);
+                                                          void *conf);
 static void *ngx_http_vhost_traffic_status_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_vhost_traffic_status_merge_loc_conf(ngx_conf_t *cf,
-    void *parent, void *child);
+                                                          void *parent, void *child);
 static ngx_int_t ngx_http_vhost_traffic_status_init_worker(ngx_cycle_t *cycle);
 static void ngx_http_vhost_traffic_status_exit_worker(ngx_cycle_t *cycle);
 
+static ngx_conf_enum_t ngx_http_vhost_traffic_status_display_format[] = {
+    {ngx_string("json"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSON},
+    {ngx_string("html"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_HTML},
+    {ngx_string("jsonp"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSONP},
+    {ngx_string("prometheus"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_PROMETHEUS},
+    {ngx_null_string, 0}};
 
-static ngx_conf_enum_t  ngx_http_vhost_traffic_status_display_format[] = {
-    { ngx_string("json"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSON },
-    { ngx_string("html"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_HTML },
-    { ngx_string("jsonp"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_JSONP },
-    { ngx_string("prometheus"), NGX_HTTP_VHOST_TRAFFIC_STATUS_FORMAT_PROMETHEUS },
-    { ngx_null_string, 0 }
-};
-
-
-static ngx_conf_enum_t  ngx_http_vhost_traffic_status_average_method_post[] = {
-    { ngx_string("AMM"), NGX_HTTP_VHOST_TRAFFIC_STATUS_AVERAGE_METHOD_AMM },
-    { ngx_string("WMA"), NGX_HTTP_VHOST_TRAFFIC_STATUS_AVERAGE_METHOD_WMA },
-    { ngx_null_string, 0 }
-};
-
+static ngx_conf_enum_t ngx_http_vhost_traffic_status_average_method_post[] = {
+    {ngx_string("AMM"), NGX_HTTP_VHOST_TRAFFIC_STATUS_AVERAGE_METHOD_AMM},
+    {ngx_string("WMA"), NGX_HTTP_VHOST_TRAFFIC_STATUS_AVERAGE_METHOD_WMA},
+    {ngx_null_string, 0}};
 
 static ngx_command_t ngx_http_vhost_traffic_status_commands[] = {
 
-    { ngx_string("vhost_traffic_status"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, enable),
-      NULL },
+    {ngx_string("vhost_traffic_status"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, enable),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_filter"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter),
-      NULL },
+    {ngx_string("vhost_traffic_status_filter"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_filter_by_host"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter_host),
-      NULL },
+    {ngx_string("vhost_traffic_status_filter_by_host"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter_host),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_filter_check_duplicate"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter_check_duplicate),
-      NULL },
+    {ngx_string("vhost_traffic_status_filter_check_duplicate"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, filter_check_duplicate),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_filter_by_set_key"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
-      ngx_http_vhost_traffic_status_filter_by_set_key,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_filter_by_set_key"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE12,
+     ngx_http_vhost_traffic_status_filter_by_set_key,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_filter_max_node"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_1MORE,
-      ngx_http_vhost_traffic_status_filter_max_node,
-      0,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_filter_max_node"),
+     NGX_HTTP_MAIN_CONF | NGX_CONF_1MORE,
+     ngx_http_vhost_traffic_status_filter_max_node,
+     0,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_limit"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, limit),
-      NULL },
+    {ngx_string("vhost_traffic_status_limit"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, limit),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_limit_check_duplicate"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, limit_check_duplicate),
-      NULL },
+    {ngx_string("vhost_traffic_status_limit_check_duplicate"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, limit_check_duplicate),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_limit_traffic"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
-      ngx_http_vhost_traffic_status_limit_traffic,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_limit_traffic"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE12,
+     ngx_http_vhost_traffic_status_limit_traffic,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_limit_traffic_by_set_key"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE23,
-      ngx_http_vhost_traffic_status_limit_traffic_by_set_key,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_limit_traffic_by_set_key"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE23,
+     ngx_http_vhost_traffic_status_limit_traffic_by_set_key,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_zone"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_NOARGS|NGX_CONF_TAKE1,
-      ngx_http_vhost_traffic_status_zone,
-      0,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_zone"),
+     NGX_HTTP_MAIN_CONF | NGX_CONF_NOARGS | NGX_CONF_TAKE1,
+     ngx_http_vhost_traffic_status_zone,
+     0,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_dump"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE12,
-      ngx_http_vhost_traffic_status_dump,
-      0,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_dump"),
+     NGX_HTTP_MAIN_CONF | NGX_CONF_TAKE12,
+     ngx_http_vhost_traffic_status_dump,
+     0,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_display"),
-      NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_NOARGS|NGX_CONF_TAKE1,
-      ngx_http_vhost_traffic_status_display,
-      0,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_display"),
+     NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_NOARGS | NGX_CONF_TAKE1,
+     ngx_http_vhost_traffic_status_display,
+     0,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_display_format"),
-      NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_enum_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, format),
-      &ngx_http_vhost_traffic_status_display_format },
+    {ngx_string("vhost_traffic_status_display_format"),
+     NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1,
+     ngx_conf_set_enum_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, format),
+     &ngx_http_vhost_traffic_status_display_format},
 
-    { ngx_string("vhost_traffic_status_display_jsonp"),
-      NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_str_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, jsonp),
-      NULL },
+    {ngx_string("vhost_traffic_status_display_jsonp"),
+     NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1,
+     ngx_conf_set_str_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, jsonp),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_display_sum_key"),
-      NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_str_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, sum_key),
-      NULL },
+    {ngx_string("vhost_traffic_status_display_sum_key"),
+     NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1,
+     ngx_conf_set_str_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, sum_key),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_set_by_filter"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
-                        |NGX_HTTP_LIF_CONF|NGX_CONF_TAKE2,
-      ngx_http_vhost_traffic_status_set_by_filter,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_set_by_filter"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_HTTP_LIF_CONF | NGX_CONF_TAKE2,
+     ngx_http_vhost_traffic_status_set_by_filter,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_average_method"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
-      ngx_http_vhost_traffic_status_average_method,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_average_method"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_TAKE12,
+     ngx_http_vhost_traffic_status_average_method,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_histogram_buckets"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
-      ngx_http_vhost_traffic_status_histogram_buckets,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL },
+    {ngx_string("vhost_traffic_status_histogram_buckets"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_1MORE,
+     ngx_http_vhost_traffic_status_histogram_buckets,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-    { ngx_string("vhost_traffic_status_bypass_limit"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, bypass_limit),
-      NULL },
+    {ngx_string("vhost_traffic_status_bypass_limit"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, bypass_limit),
+     NULL},
 
-    { ngx_string("vhost_traffic_status_bypass_stats"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_vhost_traffic_status_loc_conf_t, bypass_stats),
-      NULL },
+    {ngx_string("vhost_traffic_status_bypass_stats"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_vhost_traffic_status_loc_conf_t, bypass_stats),
+     NULL},
 
-    ngx_null_command
-};
-
+    ngx_null_command};
 
 static ngx_http_module_t ngx_http_vhost_traffic_status_module_ctx = {
     ngx_http_vhost_traffic_status_preconfiguration, /* preconfiguration */
@@ -221,36 +211,33 @@ static ngx_http_module_t ngx_http_vhost_traffic_status_module_ctx = {
     ngx_http_vhost_traffic_status_create_main_conf, /* create main configuration */
     ngx_http_vhost_traffic_status_init_main_conf,   /* init main configuration */
 
-    NULL,                                           /* create server configuration */
-    NULL,                                           /* merge server configuration */
+    NULL, /* create server configuration */
+    NULL, /* merge server configuration */
 
-    ngx_http_vhost_traffic_status_create_loc_conf,  /* create location configuration */
-    ngx_http_vhost_traffic_status_merge_loc_conf,   /* merge location configuration */
+    ngx_http_vhost_traffic_status_create_loc_conf, /* create location configuration */
+    ngx_http_vhost_traffic_status_merge_loc_conf,  /* merge location configuration */
 };
-
 
 ngx_module_t ngx_http_vhost_traffic_status_module = {
     NGX_MODULE_V1,
-    &ngx_http_vhost_traffic_status_module_ctx,   /* module context */
-    ngx_http_vhost_traffic_status_commands,      /* module directives */
-    NGX_HTTP_MODULE,                             /* module type */
-    NULL,                                        /* init master */
-    NULL,                                        /* init module */
-    ngx_http_vhost_traffic_status_init_worker,   /* init process */
-    NULL,                                        /* init thread */
-    NULL,                                        /* exit thread */
-    ngx_http_vhost_traffic_status_exit_worker,   /* exit process */
-    NULL,                                        /* exit master */
-    NGX_MODULE_V1_PADDING
-};
-
+    &ngx_http_vhost_traffic_status_module_ctx, /* module context */
+    ngx_http_vhost_traffic_status_commands,    /* module directives */
+    NGX_HTTP_MODULE,                           /* module type */
+    NULL,                                      /* init master */
+    NULL,                                      /* init module */
+    ngx_http_vhost_traffic_status_init_worker, /* init process */
+    NULL,                                      /* init thread */
+    NULL,                                      /* exit thread */
+    ngx_http_vhost_traffic_status_exit_worker, /* exit process */
+    NULL,                                      /* exit master */
+    NGX_MODULE_V1_PADDING};
 
 static ngx_int_t
 ngx_http_vhost_traffic_status_handler(ngx_http_request_t *r)
 {
-    ngx_int_t                                  rc;
-    ngx_http_vhost_traffic_status_ctx_t       *ctx;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_int_t rc;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http vts handler");
@@ -258,34 +245,40 @@ ngx_http_vhost_traffic_status_handler(ngx_http_request_t *r)
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
-    if (!ctx->enable || !vtscf->enable || vtscf->bypass_stats) {
+    if (!ctx->enable || !vtscf->enable || vtscf->bypass_stats)
+    {
         return NGX_DECLINED;
     }
-    if (vtscf->shm_zone == NULL) {
+    if (vtscf->shm_zone == NULL)
+    {
         return NGX_DECLINED;
     }
 
     rc = ngx_http_vhost_traffic_status_shm_add_server(r);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "handler::shm_add_server() failed");
     }
 
     rc = ngx_http_vhost_traffic_status_shm_add_upstream(r);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "handler::shm_add_upstream() failed");
     }
 
     rc = ngx_http_vhost_traffic_status_shm_add_filter(r);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "handler::shm_add_filter() failed");
     }
 
 #if (NGX_HTTP_CACHE)
     rc = ngx_http_vhost_traffic_status_shm_add_cache(r);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "handler::shm_add_cache() failed");
     }
@@ -294,95 +287,96 @@ ngx_http_vhost_traffic_status_handler(ngx_http_request_t *r)
     return NGX_DECLINED;
 }
 
-
 ngx_msec_t
 ngx_http_vhost_traffic_status_current_msec(void)
 {
-    time_t           sec;
-    ngx_uint_t       msec;
-    struct timeval   tv;
+    time_t sec;
+    ngx_uint_t msec;
+    struct timeval tv;
 
     ngx_gettimeofday(&tv);
 
     sec = tv.tv_sec;
     msec = tv.tv_usec / 1000;
 
-    return (ngx_msec_t) sec * 1000 + msec;
+    return (ngx_msec_t)sec * 1000 + msec;
 }
-
 
 ngx_msec_int_t
 ngx_http_vhost_traffic_status_request_time(ngx_http_request_t *r)
 {
-    ngx_time_t      *tp;
-    ngx_msec_int_t   ms;
+    ngx_time_t *tp;
+    ngx_msec_int_t ms;
 
     tp = ngx_timeofday();
 
-    ms = (ngx_msec_int_t)
-             ((tp->sec - r->start_sec) * 1000 + (tp->msec - r->start_msec));
+    ms = (ngx_msec_int_t)((tp->sec - r->start_sec) * 1000 + (tp->msec - r->start_msec));
     return ngx_max(ms, 0);
 }
-
 
 ngx_msec_int_t
 ngx_http_vhost_traffic_status_upstream_response_time(ngx_http_request_t *r)
 {
-    ngx_uint_t                  i;
-    ngx_msec_int_t              ms;
-    ngx_http_upstream_state_t  *state;
+    ngx_uint_t i;
+    ngx_msec_int_t ms;
+    ngx_http_upstream_state_t *state;
 
     state = r->upstream_states->elts;
 
     i = 0;
     ms = 0;
-    for ( ;; ) {
-        if (state[i].status) {
+    for (;;)
+    {
+        if (state[i].status)
+        {
 
 #if !defined(nginx_version) || nginx_version < 1009001
-            ms += (ngx_msec_int_t)
-                  (state[i].response_sec * 1000 + state[i].response_msec);
+            ms += (ngx_msec_int_t)(state[i].response_sec * 1000 + state[i].response_msec);
 #else
             ms += state[i].response_time;
 #endif
-
         }
-        if (++i == r->upstream_states->nelts) {
+        if (++i == r->upstream_states->nelts)
+        {
             break;
         }
     }
     return ngx_max(ms, 0);
 }
 
-
 static void
 ngx_http_vhost_traffic_status_rbtree_insert_value(ngx_rbtree_node_t *temp,
-    ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
+                                                  ngx_rbtree_node_t *node, ngx_rbtree_node_t *sentinel)
 {
-    ngx_rbtree_node_t                     **p;
-    ngx_http_vhost_traffic_status_node_t   *vtsn, *vtsnt;
+    ngx_rbtree_node_t **p;
+    ngx_http_vhost_traffic_status_node_t *vtsn, *vtsnt;
 
-    for ( ;; ) {
+    for (;;)
+    {
 
-        if (node->key < temp->key) {
+        if (node->key < temp->key)
+        {
 
             p = &temp->left;
-
-        } else if (node->key > temp->key) {
+        }
+        else if (node->key > temp->key)
+        {
 
             p = &temp->right;
+        }
+        else
+        { /* node->key == temp->key */
 
-        } else { /* node->key == temp->key */
-
-            vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
-            vtsnt = (ngx_http_vhost_traffic_status_node_t *) &temp->color;
+            vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
+            vtsnt = (ngx_http_vhost_traffic_status_node_t *)&temp->color;
 
             p = (ngx_memn2cmp(vtsn->data, vtsnt->data, vtsn->len, vtsnt->len) < 0)
-                ? &temp->left
-                : &temp->right;
+                    ? &temp->left
+                    : &temp->right;
         }
 
-        if (*p == sentinel) {
+        if (*p == sentinel)
+        {
             break;
         }
 
@@ -396,40 +390,43 @@ ngx_http_vhost_traffic_status_rbtree_insert_value(ngx_rbtree_node_t *temp,
     ngx_rbt_red(node);
 }
 
-
 static ngx_int_t
 ngx_http_vhost_traffic_status_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 {
-    ngx_http_vhost_traffic_status_ctx_t  *octx = data;
+    ngx_http_vhost_traffic_status_ctx_t *octx = data;
 
-    size_t                                len;
-    ngx_slab_pool_t                      *shpool;
-    ngx_rbtree_node_t                    *sentinel;
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    size_t len;
+    ngx_slab_pool_t *shpool;
+    ngx_rbtree_node_t *sentinel;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     ctx = shm_zone->data;
 
-    if (octx) {
+    if (octx)
+    {
         ctx->rbtree = octx->rbtree;
         return NGX_OK;
     }
 
-    shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
+    shpool = (ngx_slab_pool_t *)shm_zone->shm.addr;
 
-    if (shm_zone->shm.exists) {
+    if (shm_zone->shm.exists)
+    {
         ctx->rbtree = shpool->data;
         return NGX_OK;
     }
 
     ctx->rbtree = ngx_slab_alloc(shpool, sizeof(ngx_rbtree_t));
-    if (ctx->rbtree == NULL) {
+    if (ctx->rbtree == NULL)
+    {
         return NGX_ERROR;
     }
 
     shpool->data = ctx->rbtree;
 
     sentinel = ngx_slab_alloc(shpool, sizeof(ngx_rbtree_node_t));
-    if (sentinel == NULL) {
+    if (sentinel == NULL)
+    {
         return NGX_ERROR;
     }
 
@@ -439,7 +436,8 @@ ngx_http_vhost_traffic_status_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     len = sizeof(" in vhost_traffic_status_zone \"\"") + shm_zone->shm.name.len;
 
     shpool->log_ctx = ngx_slab_alloc(shpool, len);
-    if (shpool->log_ctx == NULL) {
+    if (shpool->log_ctx == NULL)
+    {
         return NGX_ERROR;
     }
 
@@ -449,21 +447,21 @@ ngx_http_vhost_traffic_status_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     return NGX_OK;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    u_char                               *p;
-    ssize_t                               size;
-    ngx_str_t                            *value, name, s;
-    ngx_uint_t                            i;
-    ngx_shm_zone_t                       *shm_zone;
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    u_char *p;
+    ssize_t size;
+    ngx_str_t *value, name, s;
+    ngx_uint_t i;
+    ngx_shm_zone_t *shm_zone;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     value = cf->args->elts;
 
     ctx = ngx_http_conf_get_module_main_conf(cf, ngx_http_vhost_traffic_status_module);
-    if (ctx == NULL) {
+    if (ctx == NULL)
+    {
         return NGX_CONF_ERROR;
     }
 
@@ -473,13 +471,16 @@ ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *con
 
     size = NGX_HTTP_VHOST_TRAFFIC_STATUS_DEFAULT_SHM_SIZE;
 
-    for (i = 1; i < cf->args->nelts; i++) {
-        if (ngx_strncmp(value[i].data, "shared:", 7) == 0) {
+    for (i = 1; i < cf->args->nelts; i++)
+    {
+        if (ngx_strncmp(value[i].data, "shared:", 7) == 0)
+        {
 
             name.data = value[i].data + 7;
 
-            p = (u_char *) ngx_strchr(name.data, ':');
-            if (p == NULL) {
+            p = (u_char *)ngx_strchr(name.data, ':');
+            if (p == NULL)
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "invalid shared size \"%V\"", &value[i]);
                 return NGX_CONF_ERROR;
@@ -491,13 +492,15 @@ ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *con
             s.len = value[i].data + value[i].len - s.data;
 
             size = ngx_parse_size(&s);
-            if (size == NGX_ERROR) {
+            if (size == NGX_ERROR)
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "invalid shared size \"%V\"", &value[i]);
                 return NGX_CONF_ERROR;
             }
 
-            if (size < (ssize_t) (8 * ngx_pagesize)) {
+            if (size < (ssize_t)(8 * ngx_pagesize))
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "shared \"%V\" is too small", &value[i]);
                 return NGX_CONF_ERROR;
@@ -513,11 +516,13 @@ ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *con
 
     shm_zone = ngx_shared_memory_add(cf, &name, size,
                                      &ngx_http_vhost_traffic_status_module);
-    if (shm_zone == NULL) {
+    if (shm_zone == NULL)
+    {
         return NGX_CONF_ERROR;
     }
 
-    if (shm_zone->data) {
+    if (shm_zone->data)
+    {
         ctx = shm_zone->data;
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -536,14 +541,13 @@ ngx_http_vhost_traffic_status_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *con
     return NGX_CONF_OK;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_dump(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_vhost_traffic_status_ctx_t  *ctx = conf;
+    ngx_http_vhost_traffic_status_ctx_t *ctx = conf;
 
-    ngx_int_t   rc;
-    ngx_str_t  *value;
+    ngx_int_t rc;
+    ngx_str_t *value;
 
     value = cf->args->elts;
 
@@ -552,13 +556,15 @@ ngx_http_vhost_traffic_status_dump(ngx_conf_t *cf, ngx_command_t *cmd, void *con
     ctx->dump_file = value[1];
 
     /* second argument process */
-    if (cf->args->nelts == 3) {
+    if (cf->args->nelts == 3)
+    {
         rc = ngx_parse_time(&value[2], 0);
-        if (rc == NGX_ERROR) {
+        if (rc == NGX_ERROR)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid parameter \"%V\"", &value[2]);
             goto invalid;
         }
-        ctx->dump_period = (ngx_msec_t) rc;
+        ctx->dump_period = (ngx_msec_t)rc;
     }
 
     return NGX_CONF_OK;
@@ -568,40 +574,43 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_filter_max_node(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
+                                              void *conf)
 {
-    ngx_http_vhost_traffic_status_ctx_t  *ctx = conf;
+    ngx_http_vhost_traffic_status_ctx_t *ctx = conf;
 
-    ngx_str_t                                     *value;
-    ngx_int_t                                      n;
-    ngx_uint_t                                     i;
-    ngx_array_t                                   *filter_max_node_matches;
-    ngx_http_vhost_traffic_status_filter_match_t  *matches;
+    ngx_str_t *value;
+    ngx_int_t n;
+    ngx_uint_t i;
+    ngx_array_t *filter_max_node_matches;
+    ngx_http_vhost_traffic_status_filter_match_t *matches;
 
     filter_max_node_matches = ngx_array_create(cf->pool, 1,
-                                  sizeof(ngx_http_vhost_traffic_status_filter_match_t));
-    if (filter_max_node_matches == NULL) {
+                                               sizeof(ngx_http_vhost_traffic_status_filter_match_t));
+    if (filter_max_node_matches == NULL)
+    {
         goto invalid;
     }
 
     value = cf->args->elts;
 
     n = ngx_atoi(value[1].data, value[1].len);
-    if (n < 0) {
+    if (n < 0)
+    {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid number of filter_max_node \"%V\"", &value[1]);
         return NGX_CONF_ERROR;
     }
 
-    ctx->filter_max_node = (ngx_uint_t) n;
+    ctx->filter_max_node = (ngx_uint_t)n;
 
     /* arguments process */
-    for (i = 2; i < cf->args->nelts; i++) {
+    for (i = 2; i < cf->args->nelts; i++)
+    {
         matches = ngx_array_push(filter_max_node_matches);
-        if (matches == NULL) {
+        if (matches == NULL)
+        {
             goto invalid;
         }
 
@@ -618,16 +627,15 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_average_method(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
+                                             void *conf)
 {
     ngx_http_vhost_traffic_status_loc_conf_t *vtscf = conf;
 
-    char       *rv;
-    ngx_int_t   rc;
-    ngx_str_t  *value;
+    char *rv;
+    ngx_int_t rc;
+    ngx_str_t *value;
 
     value = cf->args->elts;
 
@@ -635,19 +643,22 @@ ngx_http_vhost_traffic_status_average_method(ngx_conf_t *cf, ngx_command_t *cmd,
     cmd->post = &ngx_http_vhost_traffic_status_average_method_post;
 
     rv = ngx_conf_set_enum_slot(cf, cmd, conf);
-    if (rv != NGX_CONF_OK) {
+    if (rv != NGX_CONF_OK)
+    {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid parameter \"%V\"", &value[1]);
         goto invalid;
     }
 
     /* second argument process */
-    if (cf->args->nelts == 3) {
+    if (cf->args->nelts == 3)
+    {
         rc = ngx_parse_time(&value[2], 0);
-        if (rc == NGX_ERROR) {
+        if (rc == NGX_ERROR)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid parameter \"%V\"", &value[2]);
             goto invalid;
         }
-        vtscf->average_period = (ngx_msec_t) rc;
+        vtscf->average_period = (ngx_msec_t)rc;
     }
 
     return NGX_CONF_OK;
@@ -657,47 +668,51 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_histogram_buckets(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
+                                                void *conf)
 {
     ngx_http_vhost_traffic_status_loc_conf_t *vtscf = conf;
 
-    ngx_str_t                                       *value;
-    ngx_int_t                                        n;
-    ngx_uint_t                                       i;
-    ngx_array_t                                     *histogram_buckets;
-    ngx_http_vhost_traffic_status_node_histogram_t  *buckets;
+    ngx_str_t *value;
+    ngx_int_t n;
+    ngx_uint_t i;
+    ngx_array_t *histogram_buckets;
+    ngx_http_vhost_traffic_status_node_histogram_t *buckets;
 
     histogram_buckets = ngx_array_create(cf->pool, 1,
-                            sizeof(ngx_http_vhost_traffic_status_node_histogram_t));
-    if (histogram_buckets == NULL) {
+                                         sizeof(ngx_http_vhost_traffic_status_node_histogram_t));
+    if (histogram_buckets == NULL)
+    {
         goto invalid;
     }
 
     value = cf->args->elts;
 
     /* arguments process */
-    for (i = 1; i < cf->args->nelts; i++) {
-        if (i > NGX_HTTP_VHOST_TRAFFIC_STATUS_DEFAULT_BUCKET_LEN) {
+    for (i = 1; i < cf->args->nelts; i++)
+    {
+        if (i > NGX_HTTP_VHOST_TRAFFIC_STATUS_DEFAULT_BUCKET_LEN)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "histogram bucket size exceeds %d",
                                NGX_HTTP_VHOST_TRAFFIC_STATUS_DEFAULT_BUCKET_LEN);
             break;
         }
 
         n = ngx_atofp(value[i].data, value[i].len, 3);
-        if (n == NGX_ERROR || n == 0) {
+        if (n == NGX_ERROR || n == 0)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid parameter \"%V\"", &value[i]);
             goto invalid;
         }
 
         buckets = ngx_array_push(histogram_buckets);
-        if (buckets == NULL) {
+        if (buckets == NULL)
+        {
             goto invalid;
         }
 
-        buckets->msec = (ngx_msec_int_t) n;
+        buckets->msec = (ngx_msec_int_t)n;
     }
 
     vtscf->histogram_buckets = histogram_buckets;
@@ -709,19 +724,17 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
 static ngx_int_t
 ngx_http_vhost_traffic_status_preconfiguration(ngx_conf_t *cf)
 {
     return ngx_http_vhost_traffic_status_add_variables(cf);
 }
 
-
 static ngx_int_t
 ngx_http_vhost_traffic_status_init(ngx_conf_t *cf)
 {
-    ngx_http_handler_pt        *h;
-    ngx_http_core_main_conf_t  *cmcf;
+    ngx_http_handler_pt *h;
+    ngx_http_core_main_conf_t *cmcf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
                    "http vts init");
@@ -730,7 +743,8 @@ ngx_http_vhost_traffic_status_init(ngx_conf_t *cf)
 
     /* limit handler */
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_PREACCESS_PHASE].handlers);
-    if (h == NULL) {
+    if (h == NULL)
+    {
         return NGX_ERROR;
     }
 
@@ -738,7 +752,8 @@ ngx_http_vhost_traffic_status_init(ngx_conf_t *cf)
 
     /* set handler */
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
-    if (h == NULL) {
+    if (h == NULL)
+    {
         return NGX_ERROR;
     }
 
@@ -746,7 +761,8 @@ ngx_http_vhost_traffic_status_init(ngx_conf_t *cf)
 
     /* vts handler */
     h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
-    if (h == NULL) {
+    if (h == NULL)
+    {
         return NGX_ERROR;
     }
 
@@ -755,14 +771,14 @@ ngx_http_vhost_traffic_status_init(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
 static void *
 ngx_http_vhost_traffic_status_create_main_conf(ngx_conf_t *cf)
 {
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_vhost_traffic_status_ctx_t));
-    if (ctx == NULL) {
+    if (ctx == NULL)
+    {
         return NULL;
     }
 
@@ -800,32 +816,35 @@ ngx_http_vhost_traffic_status_create_main_conf(ngx_conf_t *cf)
     return ctx;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_init_main_conf(ngx_conf_t *cf, void *conf)
 {
-    ngx_http_vhost_traffic_status_ctx_t  *ctx = conf;
+    ngx_http_vhost_traffic_status_ctx_t *ctx = conf;
 
-    ngx_int_t                                  rc;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_int_t rc;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
                    "http vts init main conf");
 
     vtscf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_vhost_traffic_status_module);
 
-    if (vtscf->filter_check_duplicate != 0) {
+    if (vtscf->filter_check_duplicate != 0)
+    {
         rc = ngx_http_vhost_traffic_status_filter_unique(cf->pool, &ctx->filter_keys);
-        if (rc != NGX_OK) {
+        if (rc != NGX_OK)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "init_main_conf::filter_unique() failed");
             return NGX_CONF_ERROR;
         }
     }
 
-    if (vtscf->limit_check_duplicate != 0) {
+    if (vtscf->limit_check_duplicate != 0)
+    {
         rc = ngx_http_vhost_traffic_status_limit_traffic_unique(cf->pool, &ctx->limit_traffics);
-        if (rc != NGX_OK) {
+        if (rc != NGX_OK)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "init_main_conf::limit_traffic_unique(server) failed");
             return NGX_CONF_ERROR;
@@ -833,7 +852,8 @@ ngx_http_vhost_traffic_status_init_main_conf(ngx_conf_t *cf, void *conf)
 
         rc = ngx_http_vhost_traffic_status_limit_traffic_unique(cf->pool,
                                                                 &ctx->limit_filter_traffics);
-        if (rc != NGX_OK) {
+        if (rc != NGX_OK)
+        {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "init_main_conf::limit_traffic_unique(filter) failed");
             return NGX_CONF_ERROR;
@@ -851,14 +871,14 @@ ngx_http_vhost_traffic_status_init_main_conf(ngx_conf_t *cf, void *conf)
     return NGX_CONF_OK;
 }
 
-
 static void *
 ngx_http_vhost_traffic_status_create_loc_conf(ngx_conf_t *cf)
 {
-    ngx_http_vhost_traffic_status_loc_conf_t  *conf;
+    ngx_http_vhost_traffic_status_loc_conf_t *conf;
 
     conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_vhost_traffic_status_loc_conf_t));
-    if (conf == NULL) {
+    if (conf == NULL)
+    {
         return NULL;
     }
 
@@ -909,8 +929,7 @@ ngx_http_vhost_traffic_status_create_loc_conf(ngx_conf_t *cf)
     conf->bypass_limit = NGX_CONF_UNSET;
     conf->bypass_stats = NGX_CONF_UNSET;
 
-    conf->node_caches = ngx_pcalloc(cf->pool, sizeof(ngx_rbtree_node_t *)
-                                    * (NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_FG + 1));
+    conf->node_caches = ngx_pcalloc(cf->pool, sizeof(ngx_rbtree_node_t *) * (NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_FG + 1));
     conf->node_caches[NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_NO] = NULL;
     conf->node_caches[NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UA] = NULL;
     conf->node_caches[NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UG] = NULL;
@@ -920,55 +939,65 @@ ngx_http_vhost_traffic_status_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 
-
 static char *
 ngx_http_vhost_traffic_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_http_vhost_traffic_status_loc_conf_t *prev = parent;
     ngx_http_vhost_traffic_status_loc_conf_t *conf = child;
 
-    ngx_int_t                             rc;
-    ngx_str_t                             name;
-    ngx_shm_zone_t                       *shm_zone;
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    ngx_int_t rc;
+    ngx_str_t name;
+    ngx_shm_zone_t *shm_zone;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cf->log, 0,
                    "http vts merge loc conf");
 
     ctx = ngx_http_conf_get_module_main_conf(cf, ngx_http_vhost_traffic_status_module);
 
-    if (!ctx->enable) {
+    if (!ctx->enable)
+    {
         return NGX_CONF_OK;
     }
 
-    if (conf->filter_keys == NULL) {
+    if (conf->filter_keys == NULL)
+    {
         conf->filter_keys = prev->filter_keys;
-
-    } else {
-        if (conf->filter_check_duplicate == NGX_CONF_UNSET) {
+    }
+    else
+    {
+        if (conf->filter_check_duplicate == NGX_CONF_UNSET)
+        {
             conf->filter_check_duplicate = ctx->filter_check_duplicate;
         }
-        if (conf->filter_check_duplicate != 0) {
+        if (conf->filter_check_duplicate != 0)
+        {
             rc = ngx_http_vhost_traffic_status_filter_unique(cf->pool, &conf->filter_keys);
-            if (rc != NGX_OK) {
+            if (rc != NGX_OK)
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "mere_loc_conf::filter_unique() failed");
                 return NGX_CONF_ERROR;
             }
         }
     }
 
-    if (conf->limit_traffics == NULL) {
+    if (conf->limit_traffics == NULL)
+    {
         conf->limit_traffics = prev->limit_traffics;
-
-    } else {
-        if (conf->limit_check_duplicate == NGX_CONF_UNSET) {
+    }
+    else
+    {
+        if (conf->limit_check_duplicate == NGX_CONF_UNSET)
+        {
             conf->limit_check_duplicate = ctx->limit_check_duplicate;
         }
 
-        if (conf->limit_check_duplicate != 0) {
+        if (conf->limit_check_duplicate != 0)
+        {
             rc = ngx_http_vhost_traffic_status_limit_traffic_unique(cf->pool,
                                                                     &conf->limit_traffics);
-            if (rc != NGX_OK) {
+            if (rc != NGX_OK)
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "mere_loc_conf::limit_traffic_unique(server) failed");
                 return NGX_CONF_ERROR;
@@ -976,18 +1005,23 @@ ngx_http_vhost_traffic_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void 
         }
     }
 
-    if (conf->limit_filter_traffics == NULL) {
+    if (conf->limit_filter_traffics == NULL)
+    {
         conf->limit_filter_traffics = prev->limit_filter_traffics;
-
-    } else {
-        if (conf->limit_check_duplicate == NGX_CONF_UNSET) {
+    }
+    else
+    {
+        if (conf->limit_check_duplicate == NGX_CONF_UNSET)
+        {
             conf->limit_check_duplicate = ctx->limit_check_duplicate;
         }
 
-        if (conf->limit_check_duplicate != 0) {
+        if (conf->limit_check_duplicate != 0)
+        {
             rc = ngx_http_vhost_traffic_status_limit_traffic_unique(cf->pool,
                                                                     &conf->limit_filter_traffics);
-            if (rc != NGX_OK) {
+            if (rc != NGX_OK)
+            {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "mere_loc_conf::limit_traffic_unique(filter) failed");
                 return NGX_CONF_ERROR;
@@ -1023,7 +1057,8 @@ ngx_http_vhost_traffic_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void 
 
     shm_zone = ngx_shared_memory_add(cf, &name, 0,
                                      &ngx_http_vhost_traffic_status_module);
-    if (shm_zone == NULL) {
+    if (shm_zone == NULL)
+    {
         return NGX_CONF_ERROR;
     }
 
@@ -1033,25 +1068,26 @@ ngx_http_vhost_traffic_status_merge_loc_conf(ngx_conf_t *cf, void *parent, void 
     return NGX_CONF_OK;
 }
 
-
 static ngx_int_t
 ngx_http_vhost_traffic_status_init_worker(ngx_cycle_t *cycle)
 {
-    ngx_event_t                          *dump_event;
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    ngx_event_t *dump_event;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                    "http vts init worker");
 
     ctx = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_vhost_traffic_status_module);
 
-    if (ctx == NULL) {
+    if (ctx == NULL)
+    {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                        "vts::init_worker(): is bypassed due to no http block in configure file");
         return NGX_OK;
     }
 
-    if (!(ctx->enable & ctx->dump) || ctx->rbtree == NULL) {
+    if (!(ctx->enable & ctx->dump) || ctx->rbtree == NULL)
+    {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                        "vts::init_worker(): is bypassed");
         return NGX_OK;
@@ -1070,25 +1106,26 @@ ngx_http_vhost_traffic_status_init_worker(ngx_cycle_t *cycle)
     return NGX_OK;
 }
 
-
 static void
 ngx_http_vhost_traffic_status_exit_worker(ngx_cycle_t *cycle)
 {
-    ngx_event_t                          *dump_event;
-    ngx_http_vhost_traffic_status_ctx_t  *ctx;
+    ngx_event_t *dump_event;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                    "http vts exit worker");
 
     ctx = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_vhost_traffic_status_module);
 
-    if (ctx == NULL) {
+    if (ctx == NULL)
+    {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                        "vts::exit_worker(): is bypassed due to no http block in configure file");
         return;
     }
 
-    if (!(ctx->enable & ctx->dump) || ctx->rbtree == NULL) {
+    if (!(ctx->enable & ctx->dump) || ctx->rbtree == NULL)
+    {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0,
                        "vts::exit_worker(): is bypassed");
         return;

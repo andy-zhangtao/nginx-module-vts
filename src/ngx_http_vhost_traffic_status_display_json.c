@@ -3,21 +3,19 @@
  * Copyright (C) YoungJoo Kim (vozlt)
  */
 
-
 #include "ngx_http_vhost_traffic_status_module.h"
 #include "ngx_http_vhost_traffic_status_shm.h"
 #include "ngx_http_vhost_traffic_status_filter.h"
 #include "ngx_http_vhost_traffic_status_display_json.h"
 #include "ngx_http_vhost_traffic_status_display.h"
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_main(ngx_http_request_t *r,
-    u_char *buf)
+                                               u_char *buf)
 {
-    ngx_atomic_int_t                           ap, hn, ac, rq, rd, wr, wa;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
-    ngx_http_vhost_traffic_status_shm_info_t  *shm_info;
+    ngx_atomic_int_t ap, hn, ac, rq, rd, wr, wa;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
+    ngx_http_vhost_traffic_status_shm_info_t *shm_info;
 
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
@@ -30,7 +28,8 @@ ngx_http_vhost_traffic_status_display_set_main(ngx_http_request_t *r,
     wa = *ngx_stat_waiting;
 
     shm_info = ngx_pcalloc(r->pool, sizeof(ngx_http_vhost_traffic_status_shm_info_t));
-    if (shm_info == NULL) {
+    if (shm_info == NULL)
+    {
         return buf;
     }
 
@@ -45,25 +44,25 @@ ngx_http_vhost_traffic_status_display_set_main(ngx_http_request_t *r,
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_server_node(
     ngx_http_request_t *r,
     u_char *buf, ngx_str_t *key,
     ngx_http_vhost_traffic_status_node_t *vtsn)
 {
-    ngx_int_t                                  rc;
-    ngx_str_t                                  tmp, dst;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_int_t rc;
+    ngx_str_t tmp, dst;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
     tmp = *key;
 
-    (void) ngx_http_vhost_traffic_status_node_position_key(&tmp, 1);
+    (void)ngx_http_vhost_traffic_status_node_position_key(&tmp, 1);
 
     rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &dst, &tmp);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "display_set_server_node::escape_json_pool() failed");
     }
@@ -91,13 +90,13 @@ ngx_http_vhost_traffic_status_display_set_server_node(
                           &vtsn->stat_request_times, vtscf->average_method,
                           vtscf->average_period),
                       ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
-                          &vtsn->stat_request_times),
+                                                                                 &vtsn->stat_request_times),
                       ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
-                          &vtsn->stat_request_times),
+                                                                                 &vtsn->stat_request_times),
                       ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
-                          &vtsn->stat_request_buckets),
+                                                                                       &vtsn->stat_request_buckets),
                       ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
-                          &vtsn->stat_request_buckets),
+                                                                                          &vtsn->stat_request_buckets),
                       ngx_http_vhost_traffic_status_max_integer,
                       vtsn->stat_request_counter_oc,
                       vtsn->stat_in_bytes_oc,
@@ -125,19 +124,20 @@ ngx_http_vhost_traffic_status_display_set_server_node(
                       vtsn->stat_2xx_counter,
                       vtsn->stat_3xx_counter,
                       vtsn->stat_4xx_counter,
+                      vtsn->stat_499_counter,
                       vtsn->stat_5xx_counter,
                       vtsn->stat_request_time_counter,
                       ngx_http_vhost_traffic_status_node_time_queue_average(
                           &vtsn->stat_request_times, vtscf->average_method,
                           vtscf->average_period),
                       ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
-                          &vtsn->stat_request_times),
+                                                                                 &vtsn->stat_request_times),
                       ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
-                          &vtsn->stat_request_times),
+                                                                                 &vtsn->stat_request_times),
                       ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
-                          &vtsn->stat_request_buckets),
+                                                                                       &vtsn->stat_request_buckets),
                       ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
-                          &vtsn->stat_request_buckets),
+                                                                                          &vtsn->stat_request_buckets),
                       ngx_http_vhost_traffic_status_max_integer,
                       vtsn->stat_request_counter_oc,
                       vtsn->stat_in_bytes_oc,
@@ -146,6 +146,7 @@ ngx_http_vhost_traffic_status_display_set_server_node(
                       vtsn->stat_2xx_counter_oc,
                       vtsn->stat_3xx_counter_oc,
                       vtsn->stat_4xx_counter_oc,
+                      vtsn->stat_499_counter_oc,
                       vtsn->stat_5xx_counter_oc,
                       vtsn->stat_request_time_counter_oc);
 #endif
@@ -153,24 +154,25 @@ ngx_http_vhost_traffic_status_display_set_server_node(
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_server(ngx_http_request_t *r,
-    u_char *buf, ngx_rbtree_node_t *node)
+                                                 u_char *buf, ngx_rbtree_node_t *node)
 {
-    ngx_str_t                                  key;
-    ngx_http_vhost_traffic_status_ctx_t       *ctx;
-    ngx_http_vhost_traffic_status_node_t      *vtsn, ovtsn;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_str_t key;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_node_t *vtsn, ovtsn;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
 
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
-    if (node != ctx->rbtree->sentinel) {
-        vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+    if (node != ctx->rbtree->sentinel)
+    {
+        vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
 
-        if (vtsn->stat_upstream.type == NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_NO) {
+        if (vtsn->stat_upstream.type == NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_NO)
+        {
             key.data = vtsn->data;
             key.len = vtsn->len;
 
@@ -186,6 +188,7 @@ ngx_http_vhost_traffic_status_display_set_server(ngx_http_request_t *r,
             vtscf->stats.stat_2xx_counter += vtsn->stat_2xx_counter;
             vtscf->stats.stat_3xx_counter += vtsn->stat_3xx_counter;
             vtscf->stats.stat_4xx_counter += vtsn->stat_4xx_counter;
+            vtscf->stats.stat_499_counter += vtsn->stat_499_counter;
             vtscf->stats.stat_5xx_counter += vtsn->stat_5xx_counter;
             vtscf->stats.stat_request_time_counter += vtsn->stat_request_time_counter;
             ngx_http_vhost_traffic_status_node_time_queue_merge(
@@ -199,43 +202,44 @@ ngx_http_vhost_traffic_status_display_set_server(ngx_http_request_t *r,
             vtscf->stats.stat_2xx_counter_oc += vtsn->stat_2xx_counter_oc;
             vtscf->stats.stat_3xx_counter_oc += vtsn->stat_3xx_counter_oc;
             vtscf->stats.stat_4xx_counter_oc += vtsn->stat_4xx_counter_oc;
+            vtscf->stats.stat_499_counter_oc += vtsn->stat_499_counter_oc;
             vtscf->stats.stat_5xx_counter_oc += vtsn->stat_5xx_counter_oc;
             vtscf->stats.stat_request_time_counter_oc += vtsn->stat_request_time_counter_oc;
 
 #if (NGX_HTTP_CACHE)
             vtscf->stats.stat_cache_miss_counter +=
-                                       vtsn->stat_cache_miss_counter;
+                vtsn->stat_cache_miss_counter;
             vtscf->stats.stat_cache_bypass_counter +=
-                                       vtsn->stat_cache_bypass_counter;
+                vtsn->stat_cache_bypass_counter;
             vtscf->stats.stat_cache_expired_counter +=
-                                       vtsn->stat_cache_expired_counter;
+                vtsn->stat_cache_expired_counter;
             vtscf->stats.stat_cache_stale_counter +=
-                                       vtsn->stat_cache_stale_counter;
+                vtsn->stat_cache_stale_counter;
             vtscf->stats.stat_cache_updating_counter +=
-                                       vtsn->stat_cache_updating_counter;
+                vtsn->stat_cache_updating_counter;
             vtscf->stats.stat_cache_revalidated_counter +=
-                                       vtsn->stat_cache_revalidated_counter;
+                vtsn->stat_cache_revalidated_counter;
             vtscf->stats.stat_cache_hit_counter +=
-                                       vtsn->stat_cache_hit_counter;
+                vtsn->stat_cache_hit_counter;
             vtscf->stats.stat_cache_scarce_counter +=
-                                       vtsn->stat_cache_scarce_counter;
+                vtsn->stat_cache_scarce_counter;
 
             vtscf->stats.stat_cache_miss_counter_oc +=
-                                       vtsn->stat_cache_miss_counter_oc;
+                vtsn->stat_cache_miss_counter_oc;
             vtscf->stats.stat_cache_bypass_counter_oc +=
-                                       vtsn->stat_cache_bypass_counter_oc;
+                vtsn->stat_cache_bypass_counter_oc;
             vtscf->stats.stat_cache_expired_counter_oc +=
-                                       vtsn->stat_cache_expired_counter_oc;
+                vtsn->stat_cache_expired_counter_oc;
             vtscf->stats.stat_cache_stale_counter_oc +=
-                                       vtsn->stat_cache_stale_counter_oc;
+                vtsn->stat_cache_stale_counter_oc;
             vtscf->stats.stat_cache_updating_counter_oc +=
-                                       vtsn->stat_cache_updating_counter_oc;
+                vtsn->stat_cache_updating_counter_oc;
             vtscf->stats.stat_cache_revalidated_counter_oc +=
-                                       vtsn->stat_cache_revalidated_counter_oc;
+                vtsn->stat_cache_revalidated_counter_oc;
             vtscf->stats.stat_cache_hit_counter_oc +=
-                                       vtsn->stat_cache_hit_counter_oc;
+                vtsn->stat_cache_hit_counter_oc;
             vtscf->stats.stat_cache_scarce_counter_oc +=
-                                       vtsn->stat_cache_scarce_counter_oc;
+                vtsn->stat_cache_scarce_counter_oc;
 #endif
 
             ngx_http_vhost_traffic_status_add_oc((&ovtsn), (&vtscf->stats));
@@ -248,31 +252,29 @@ ngx_http_vhost_traffic_status_display_set_server(ngx_http_request_t *r,
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_filter_node(ngx_http_request_t *r,
-    u_char *buf, ngx_http_vhost_traffic_status_node_t *vtsn)
+                                                      u_char *buf, ngx_http_vhost_traffic_status_node_t *vtsn)
 {
-    ngx_str_t   key;
+    ngx_str_t key;
 
     key.data = vtsn->data;
     key.len = vtsn->len;
 
-    (void) ngx_http_vhost_traffic_status_node_position_key(&key, 2);
+    (void)ngx_http_vhost_traffic_status_node_position_key(&key, 2);
 
     return ngx_http_vhost_traffic_status_display_set_server_node(r, buf, &key, vtsn);
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
-    u_char *buf, ngx_rbtree_node_t *node)
+                                                 u_char *buf, ngx_rbtree_node_t *node)
 {
-    ngx_str_t                                     key, filter;
-    ngx_uint_t                                    i, j, n, rc;
-    ngx_array_t                                  *filter_keys, *filter_nodes;
-    ngx_http_vhost_traffic_status_filter_key_t   *keys;
-    ngx_http_vhost_traffic_status_filter_node_t  *nodes;
+    ngx_str_t key, filter;
+    ngx_uint_t i, j, n, rc;
+    ngx_array_t *filter_keys, *filter_nodes;
+    ngx_http_vhost_traffic_status_filter_key_t *keys;
+    ngx_http_vhost_traffic_status_filter_node_t *nodes;
 
     /* init array */
     filter_keys = NULL;
@@ -280,21 +282,26 @@ ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
 
     rc = ngx_http_vhost_traffic_status_filter_get_keys(r, &filter_keys, node);
 
-    if (filter_keys != NULL && rc == NGX_OK) {
+    if (filter_keys != NULL && rc == NGX_OK)
+    {
         keys = filter_keys->elts;
         n = filter_keys->nelts;
 
-        if (n > 1) {
-            ngx_qsort(keys, (size_t) n,
+        if (n > 1)
+        {
+            ngx_qsort(keys, (size_t)n,
                       sizeof(ngx_http_vhost_traffic_status_filter_key_t),
                       ngx_http_traffic_status_filter_cmp_keys);
         }
 
         ngx_memzero(&key, sizeof(ngx_str_t));
 
-        for (i = 0; i < n; i++) {
-            if (keys[i].key.len == key.len) {
-                if (ngx_strncmp(keys[i].key.data, key.data, key.len) == 0) {
+        for (i = 0; i < n; i++)
+        {
+            if (keys[i].key.len == key.len)
+            {
+                if (ngx_strncmp(keys[i].key.data, key.data, key.len) == 0)
+                {
                     continue;
                 }
             }
@@ -302,9 +309,11 @@ ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
 
             rc = ngx_http_vhost_traffic_status_filter_get_nodes(r, &filter_nodes, &key, node);
 
-            if (filter_nodes != NULL && rc == NGX_OK) {
+            if (filter_nodes != NULL && rc == NGX_OK)
+            {
                 rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &filter, &keys[i].key);
-                if (rc != NGX_OK) {
+                if (rc != NGX_OK)
+                {
                     ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                                   "display_set_filter::escape_json_pool() failed");
                 }
@@ -313,9 +322,10 @@ ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
                                   &filter);
 
                 nodes = filter_nodes->elts;
-                for (j = 0; j < filter_nodes->nelts; j++) {
+                for (j = 0; j < filter_nodes->nelts; j++)
+                {
                     buf = ngx_http_vhost_traffic_status_display_set_filter_node(r, buf,
-                              nodes[j].node);
+                                                                                nodes[j].node);
                 }
 
                 buf--;
@@ -323,20 +333,23 @@ ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
                 buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
 
                 /* destory array to prevent duplication */
-                if (filter_nodes != NULL) {
+                if (filter_nodes != NULL)
+                {
                     filter_nodes = NULL;
                 }
             }
-
         }
 
         /* destory array */
-        for (i = 0; i < n; i++) {
-             if (keys[i].key.data != NULL) {
-                 ngx_pfree(r->pool, keys[i].key.data);
-             }
+        for (i = 0; i < n; i++)
+        {
+            if (keys[i].key.data != NULL)
+            {
+                ngx_pfree(r->pool, keys[i].key.data);
+            }
         }
-        if (filter_keys != NULL) {
+        if (filter_keys != NULL)
+        {
             filter_keys = NULL;
         }
     }
@@ -344,20 +357,19 @@ ngx_http_vhost_traffic_status_display_set_filter(ngx_http_request_t *r,
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_upstream_node(ngx_http_request_t *r,
-     u_char *buf, ngx_http_upstream_server_t *us,
+                                                        u_char *buf, ngx_http_upstream_server_t *us,
 #if nginx_version > 1007001
-     ngx_http_vhost_traffic_status_node_t *vtsn
+                                                        ngx_http_vhost_traffic_status_node_t *vtsn
 #else
-     ngx_http_vhost_traffic_status_node_t *vtsn, ngx_str_t *name
+                                                        ngx_http_vhost_traffic_status_node_t *vtsn, ngx_str_t *name
 #endif
-     )
+)
 {
-    ngx_int_t                                  rc;
-    ngx_str_t                                  key;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    ngx_int_t rc;
+    ngx_str_t key;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     vtscf = ngx_http_get_module_loc_conf(r, ngx_http_vhost_traffic_status_module);
 
@@ -367,106 +379,111 @@ ngx_http_vhost_traffic_status_display_set_upstream_node(ngx_http_request_t *r,
     rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &key, name);
 #endif
 
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "display_set_upstream_node::escape_json_pool() failed");
     }
 
-    if (vtsn != NULL) {
+    if (vtsn != NULL)
+    {
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_UPSTREAM,
-                &key, vtsn->stat_request_counter,
-                vtsn->stat_in_bytes, vtsn->stat_out_bytes,
-                vtsn->stat_1xx_counter, vtsn->stat_2xx_counter,
-                vtsn->stat_3xx_counter, vtsn->stat_4xx_counter,
-                vtsn->stat_5xx_counter,
-                vtsn->stat_request_time_counter,
-                ngx_http_vhost_traffic_status_node_time_queue_average(
-                    &vtsn->stat_request_times, vtscf->average_method,
-                    vtscf->average_period),
-                ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
-                    &vtsn->stat_request_times),
-                ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
-                    &vtsn->stat_request_times),
-                ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
-                    &vtsn->stat_request_buckets),
-                ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
-                    &vtsn->stat_request_buckets),
-                vtsn->stat_upstream.response_time_counter,
-                ngx_http_vhost_traffic_status_node_time_queue_average(
-                    &vtsn->stat_upstream.response_times, vtscf->average_method,
-                    vtscf->average_period),
-                ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
-                    &vtsn->stat_upstream.response_times),
-                ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
-                    &vtsn->stat_upstream.response_times),
-                ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
-                    &vtsn->stat_upstream.response_buckets),
-                ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
-                    &vtsn->stat_upstream.response_buckets),
-                us->weight, us->max_fails,
-                us->fail_timeout,
-                ngx_http_vhost_traffic_status_boolean_to_string(us->backup),
-                ngx_http_vhost_traffic_status_boolean_to_string(us->down),
-                ngx_http_vhost_traffic_status_max_integer,
-                vtsn->stat_request_counter_oc, vtsn->stat_in_bytes_oc,
-                vtsn->stat_out_bytes_oc, vtsn->stat_1xx_counter_oc,
-                vtsn->stat_2xx_counter_oc, vtsn->stat_3xx_counter_oc,
-                vtsn->stat_4xx_counter_oc, vtsn->stat_5xx_counter_oc,
-                vtsn->stat_request_time_counter_oc, vtsn->stat_response_time_counter_oc);
-
-    } else {
+                          &key, vtsn->stat_request_counter,
+                          vtsn->stat_in_bytes, vtsn->stat_out_bytes,
+                          vtsn->stat_1xx_counter, vtsn->stat_2xx_counter,
+                          vtsn->stat_3xx_counter, vtsn->stat_4xx_counter,
+                          vtsn->stat_499_counter, vtsn->stat_5xx_counter,
+                          vtsn->stat_request_time_counter,
+                          ngx_http_vhost_traffic_status_node_time_queue_average(
+                              &vtsn->stat_request_times, vtscf->average_method,
+                              vtscf->average_period),
+                          ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
+                                                                                     &vtsn->stat_request_times),
+                          ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
+                                                                                     &vtsn->stat_request_times),
+                          ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
+                                                                                           &vtsn->stat_request_buckets),
+                          ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
+                                                                                              &vtsn->stat_request_buckets),
+                          vtsn->stat_upstream.response_time_counter,
+                          ngx_http_vhost_traffic_status_node_time_queue_average(
+                              &vtsn->stat_upstream.response_times, vtscf->average_method,
+                              vtscf->average_period),
+                          ngx_http_vhost_traffic_status_display_get_time_queue_times(r,
+                                                                                     &vtsn->stat_upstream.response_times),
+                          ngx_http_vhost_traffic_status_display_get_time_queue_msecs(r,
+                                                                                     &vtsn->stat_upstream.response_times),
+                          ngx_http_vhost_traffic_status_display_get_histogram_bucket_msecs(r,
+                                                                                           &vtsn->stat_upstream.response_buckets),
+                          ngx_http_vhost_traffic_status_display_get_histogram_bucket_counters(r,
+                                                                                              &vtsn->stat_upstream.response_buckets),
+                          us->weight, us->max_fails,
+                          us->fail_timeout,
+                          ngx_http_vhost_traffic_status_boolean_to_string(us->backup),
+                          ngx_http_vhost_traffic_status_boolean_to_string(us->down),
+                          ngx_http_vhost_traffic_status_max_integer,
+                          vtsn->stat_request_counter_oc, vtsn->stat_in_bytes_oc,
+                          vtsn->stat_out_bytes_oc, vtsn->stat_1xx_counter_oc,
+                          vtsn->stat_2xx_counter_oc, vtsn->stat_3xx_counter_oc,
+                          vtsn->stat_4xx_counter_oc, vtsn->stat_499_counter_oc, vtsn->stat_5xx_counter_oc,
+                          vtsn->stat_request_time_counter_oc, vtsn->stat_response_time_counter_oc);
+    }
+    else
+    {
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_UPSTREAM,
-                &key, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0,
-                (ngx_msec_t) 0,
-                (u_char *) "", (u_char *) "",
-                (u_char *) "", (u_char *) "",
-                (ngx_atomic_uint_t) 0,
-                (ngx_msec_t) 0,
-                (u_char *) "", (u_char *) "",
-                (u_char *) "", (u_char *) "",
-                us->weight, us->max_fails,
-                us->fail_timeout,
-                ngx_http_vhost_traffic_status_boolean_to_string(us->backup),
-                ngx_http_vhost_traffic_status_boolean_to_string(us->down),
-                ngx_http_vhost_traffic_status_max_integer,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0,
-                (ngx_atomic_uint_t) 0, (ngx_atomic_uint_t) 0);
+                          &key, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0,
+                          (ngx_msec_t)0,
+                          (u_char *)"", (u_char *)"",
+                          (u_char *)"", (u_char *)"",
+                          (ngx_atomic_uint_t)0,
+                          (ngx_msec_t)0,
+                          (u_char *)"", (u_char *)"",
+                          (u_char *)"", (u_char *)"",
+                          us->weight, us->max_fails,
+                          us->fail_timeout,
+                          ngx_http_vhost_traffic_status_boolean_to_string(us->backup),
+                          ngx_http_vhost_traffic_status_boolean_to_string(us->down),
+                          ngx_http_vhost_traffic_status_max_integer,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0,
+                          (ngx_atomic_uint_t)0, (ngx_atomic_uint_t)0);
     }
 
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_upstream_alone(ngx_http_request_t *r,
-    u_char *buf, ngx_rbtree_node_t *node)
+                                                         u_char *buf, ngx_rbtree_node_t *node)
 {
-    unsigned                               type;
-    ngx_str_t                              key;
-    ngx_http_upstream_server_t             us;
-    ngx_http_vhost_traffic_status_ctx_t   *ctx;
-    ngx_http_vhost_traffic_status_node_t  *vtsn;
+    unsigned type;
+    ngx_str_t key;
+    ngx_http_upstream_server_t us;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_node_t *vtsn;
 
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
 
     type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UA;
 
-    if (node != ctx->rbtree->sentinel) {
-        vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+    if (node != ctx->rbtree->sentinel)
+    {
+        vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
 
-        if (vtsn->stat_upstream.type == type) {
+        if (vtsn->stat_upstream.type == type)
+        {
             key.len = vtsn->len;
             key.data = vtsn->data;
 
-            (void) ngx_http_vhost_traffic_status_node_position_key(&key, 1);
+            (void)ngx_http_vhost_traffic_status_node_position_key(&key, 1);
 
 #if nginx_version > 1007001
             us.name = key;
@@ -491,53 +508,56 @@ ngx_http_vhost_traffic_status_display_set_upstream_alone(ngx_http_request_t *r,
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
-    u_char *buf)
+                                                         u_char *buf)
 {
-    size_t                                 len;
-    u_char                                *p, *o, *s;
-    uint32_t                               hash;
-    unsigned                               type, zone;
-    ngx_int_t                              rc;
-    ngx_str_t                              key, dst;
-    ngx_uint_t                             i, j, k;
-    ngx_rbtree_node_t                     *node;
-    ngx_http_upstream_server_t            *us, usn;
+    size_t len;
+    u_char *p, *o, *s;
+    uint32_t hash;
+    unsigned type, zone;
+    ngx_int_t rc;
+    ngx_str_t key, dst;
+    ngx_uint_t i, j, k;
+    ngx_rbtree_node_t *node;
+    ngx_http_upstream_server_t *us, usn;
 #if (NGX_HTTP_UPSTREAM_ZONE)
-    ngx_http_upstream_rr_peer_t           *peer;
-    ngx_http_upstream_rr_peers_t          *peers;
+    ngx_http_upstream_rr_peer_t *peer;
+    ngx_http_upstream_rr_peers_t *peers;
 #endif
-    ngx_http_upstream_srv_conf_t          *uscf, **uscfp;
-    ngx_http_upstream_main_conf_t         *umcf;
-    ngx_http_vhost_traffic_status_ctx_t   *ctx;
-    ngx_http_vhost_traffic_status_node_t  *vtsn;
+    ngx_http_upstream_srv_conf_t *uscf, **uscfp;
+    ngx_http_upstream_main_conf_t *umcf;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_node_t *vtsn;
 
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
     umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
     uscfp = umcf->upstreams.elts;
 
     len = 0;
-    for (i = 0; i < umcf->upstreams.nelts; i++) {
+    for (i = 0; i < umcf->upstreams.nelts; i++)
+    {
         uscf = uscfp[i];
         len = ngx_max(uscf->host.len, len);
     }
 
     dst.len = len + sizeof("@[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:65535") - 1;
     dst.data = ngx_pnalloc(r->pool, dst.len);
-    if (dst.data == NULL) {
+    if (dst.data == NULL)
+    {
         return buf;
     }
 
     p = dst.data;
 
-    for (i = 0; i < umcf->upstreams.nelts; i++) {
+    for (i = 0; i < umcf->upstreams.nelts; i++)
+    {
 
         uscf = uscfp[i];
 
         /* groups */
-        if (uscf->servers && !uscf->port) {
+        if (uscf->servers && !uscf->port)
+        {
             us = uscf->servers->elts;
 
             type = NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_UG;
@@ -551,7 +571,8 @@ ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
             zone = 0;
 
 #if (NGX_HTTP_UPSTREAM_ZONE)
-            if (uscf->shm_zone == NULL) {
+            if (uscf->shm_zone == NULL)
+            {
                 goto not_supported;
             }
 
@@ -561,7 +582,8 @@ ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
 
             ngx_http_upstream_rr_peers_rlock(peers);
 
-            for (peer = peers->peer; peer; peer = peer->next) {
+            for (peer = peers->peer; peer; peer = peer->next)
+            {
                 p = ngx_cpymem(p, uscf->host.data, uscf->host.len);
                 *p++ = NGX_HTTP_VHOST_TRAFFIC_STATUS_KEY_SEPARATOR;
                 p = ngx_cpymem(p, peer->name.data, peer->name.len);
@@ -569,7 +591,8 @@ ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
                 dst.len = uscf->host.len + sizeof("@") - 1 + peer->name.len;
 
                 rc = ngx_http_vhost_traffic_status_node_generate_key(r->pool, &key, &dst, type);
-                if (rc != NGX_OK) {
+                if (rc != NGX_OK)
+                {
                     ngx_http_upstream_rr_peers_unlock(peers);
                     return buf;
                 }
@@ -587,15 +610,17 @@ ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
                 usn.name = peer->name;
 #endif
 
-                if (node != NULL) {
-                    vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+                if (node != NULL)
+                {
+                    vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
 #if nginx_version > 1007001
                     buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
 #else
                     buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &peer->name);
 #endif
-
-                } else {
+                }
+                else
+                {
 #if nginx_version > 1007001
                     buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
 #else
@@ -608,19 +633,22 @@ ngx_http_vhost_traffic_status_display_set_upstream_group(ngx_http_request_t *r,
 
             ngx_http_upstream_rr_peers_unlock(peers);
 
-not_supported:
+        not_supported:
 
 #endif
 
-            for (j = 0; j < uscf->servers->nelts; j++) {
+            for (j = 0; j < uscf->servers->nelts; j++)
+            {
                 usn = us[j];
 
-                if (zone && usn.backup != 1) {
+                if (zone && usn.backup != 1)
+                {
                     continue;
                 }
 
                 /* for all A records */
-                for (k = 0; k < usn.naddrs; k++) {
+                for (k = 0; k < usn.naddrs; k++)
+                {
                     p = ngx_cpymem(p, uscf->host.data, uscf->host.len);
                     *p++ = NGX_HTTP_VHOST_TRAFFIC_STATUS_KEY_SEPARATOR;
                     p = ngx_cpymem(p, usn.addrs[k].name.data, usn.addrs[k].name.len);
@@ -628,7 +656,8 @@ not_supported:
                     dst.len = uscf->host.len + sizeof("@") - 1 + usn.addrs[k].name.len;
 
                     rc = ngx_http_vhost_traffic_status_node_generate_key(r->pool, &key, &dst, type);
-                    if (rc != NGX_OK) {
+                    if (rc != NGX_OK)
+                    {
                         return buf;
                     }
 
@@ -639,15 +668,17 @@ not_supported:
                     usn.name = usn.addrs[k].name;
 #endif
 
-                    if (node != NULL) {
-                        vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+                    if (node != NULL)
+                    {
+                        vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
 #if nginx_version > 1007001
                         buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn);
 #else
                         buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, vtsn, &usn.addrs[k].name);
 #endif
-
-                    } else {
+                    }
+                    else
+                    {
 #if nginx_version > 1007001
                         buf = ngx_http_vhost_traffic_status_display_set_upstream_node(r, buf, &usn, NULL);
 #else
@@ -659,10 +690,12 @@ not_supported:
                 }
             }
 
-            if (s == buf) {
+            if (s == buf)
+            {
                 buf = o;
-
-            } else {
+            }
+            else
+            {
                 buf--;
                 buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
                 buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
@@ -681,10 +714,12 @@ not_supported:
 
     buf = ngx_http_vhost_traffic_status_display_set_upstream_alone(r, buf, ctx->rbtree->root);
 
-    if (s == buf) {
+    if (s == buf)
+    {
         buf = o;
-
-    } else {
+    }
+    else
+    {
         buf--;
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_ARRAY_E);
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
@@ -693,23 +728,24 @@ not_supported:
     return buf;
 }
 
-
 #if (NGX_HTTP_CACHE)
 
 u_char
-*ngx_http_vhost_traffic_status_display_set_cache_node(ngx_http_request_t *r,
-    u_char *buf, ngx_http_vhost_traffic_status_node_t *vtsn)
+    *
+    ngx_http_vhost_traffic_status_display_set_cache_node(ngx_http_request_t *r,
+                                                         u_char *buf, ngx_http_vhost_traffic_status_node_t *vtsn)
 {
-    ngx_int_t  rc;
-    ngx_str_t  key, dst;
+    ngx_int_t rc;
+    ngx_str_t key, dst;
 
     dst.data = vtsn->data;
     dst.len = vtsn->len;
 
-    (void) ngx_http_vhost_traffic_status_node_position_key(&dst, 1);
+    (void)ngx_http_vhost_traffic_status_node_position_key(&dst, 1);
 
     rc = ngx_http_vhost_traffic_status_escape_json_pool(r->pool, &key, &dst);
-    if (rc != NGX_OK) {
+    if (rc != NGX_OK)
+    {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "display_set_cache_node::escape_json_pool() failed");
     }
@@ -748,20 +784,21 @@ u_char
     return buf;
 }
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set_cache(ngx_http_request_t *r,
-    u_char *buf, ngx_rbtree_node_t *node)
+                                                u_char *buf, ngx_rbtree_node_t *node)
 {
-    ngx_http_vhost_traffic_status_ctx_t   *ctx;
-    ngx_http_vhost_traffic_status_node_t  *vtsn;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_node_t *vtsn;
 
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
 
-    if (node != ctx->rbtree->sentinel) {
-        vtsn = (ngx_http_vhost_traffic_status_node_t *) &node->color;
+    if (node != ctx->rbtree->sentinel)
+    {
+        vtsn = (ngx_http_vhost_traffic_status_node_t *)&node->color;
 
-        if (vtsn->stat_upstream.type == NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_CC) {
+        if (vtsn->stat_upstream.type == NGX_HTTP_VHOST_TRAFFIC_STATUS_UPSTREAM_CC)
+        {
             buf = ngx_http_vhost_traffic_status_display_set_cache_node(r, buf, vtsn);
         }
 
@@ -774,15 +811,14 @@ ngx_http_vhost_traffic_status_display_set_cache(ngx_http_request_t *r,
 
 #endif
 
-
 u_char *
 ngx_http_vhost_traffic_status_display_set(ngx_http_request_t *r,
-    u_char *buf)
+                                          u_char *buf)
 {
-    u_char                                    *o, *s;
-    ngx_rbtree_node_t                         *node;
-    ngx_http_vhost_traffic_status_ctx_t       *ctx;
-    ngx_http_vhost_traffic_status_loc_conf_t  *vtscf;
+    u_char *o, *s;
+    ngx_rbtree_node_t *node;
+    ngx_http_vhost_traffic_status_ctx_t *ctx;
+    ngx_http_vhost_traffic_status_loc_conf_t *vtscf;
 
     ctx = ngx_http_get_module_main_conf(r, ngx_http_vhost_traffic_status_module);
 
@@ -820,10 +856,12 @@ ngx_http_vhost_traffic_status_display_set(ngx_http_request_t *r,
 
     buf = ngx_http_vhost_traffic_status_display_set_filter(r, buf, node);
 
-    if (s == buf) {
+    if (s == buf)
+    {
         buf = o;
-
-    } else {
+    }
+    else
+    {
         buf--;
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_NEXT);
@@ -838,11 +876,13 @@ ngx_http_vhost_traffic_status_display_set(ngx_http_request_t *r,
 
     buf = ngx_http_vhost_traffic_status_display_set_upstream_group(r, buf);
 
-    if (s == buf) {
+    if (s == buf)
+    {
         buf = o;
         buf--;
-
-    } else {
+    }
+    else
+    {
         buf--;
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
     }
@@ -858,10 +898,12 @@ ngx_http_vhost_traffic_status_display_set(ngx_http_request_t *r,
 
     buf = ngx_http_vhost_traffic_status_display_set_cache(r, buf, node);
 
-    if (s == buf) {
+    if (s == buf)
+    {
         buf = o;
-
-    } else {
+    }
+    else
+    {
         buf--;
         buf = ngx_sprintf(buf, NGX_HTTP_VHOST_TRAFFIC_STATUS_JSON_FMT_E);
     }
