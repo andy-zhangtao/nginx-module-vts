@@ -1282,14 +1282,14 @@
 
             heads[0] = '{}{}{}{}'.format(aHe('th rowspan="2"', 'Zone'),
                 aHe('th colspan="3"', 'Requests'),
-                aHe('th colspan="6"', 'Responses'),
-                aHe('th colspan="5"', 'Traffic'));
+                aHe('th colspan="10"', 'Responses'),
+                aHe('th colspan="4"', 'Traffic'));
 
             if (cache) {
                 heads[0] = '{}{}'.format(heads[0], aHe('th colspan="9"', 'Cache'));
             }
 
-            heads[1] = aHe('th', ['Total', 'Req/s', 'Time', '499', '1xx', '2xx', '3xx', '4xx', '5xx',
+            heads[1] = aHe('th', ['Total', 'Req/s', 'Time', '499', '500', '502', '504', '1xx', '2xx', '3xx', '4xx', '5xx',
                 'Total', 'Sent', 'Rcvd', 'Sent/s', 'Rcvd/s']);
 
             if (cache) {
@@ -1311,10 +1311,10 @@
                 aHe('th rowspan="2"', 'MaxFails'),
                 aHe('th rowspan="2"', 'FailTimeout'),
                 aHe('th colspan="3"', 'Requests'),
-                aHe('th colspan="6"', 'Responses'),
-                aHe('th colspan="5"', 'Traffic'));
+                aHe('th colspan="10"', 'Responses'),
+                aHe('th colspan="4"', 'Traffic'));
 
-            heads[1] = aHe('th', ['Total', 'Req/s', 'Time', '499', '1xx', '2xx', '3xx', '4xx', '5xx',
+            heads[1] = aHe('th', ['Total', 'Req/s', 'Time', '499', '500', '502', '504', '1xx', '2xx', '3xx', '4xx', '5xx',
                 'Total', 'Sent', 'Rcvd', 'Sent/s', 'Rcvd/s']);
 
             return aHe('thead', '{}{}'.format(aHe('tr', heads[0]), aHe('tr', heads[1])));
@@ -1325,7 +1325,7 @@
 
             heads[0] = '{}{}{}{}'.format(aHe('th rowspan="2"', 'Zone'),
                 aHe('th colspan="2"', 'Size'),
-                aHe('th colspan="5"', 'Traffic'),
+                aHe('th colspan="4"', 'Traffic'),
                 aHe('th colspan="9"', 'Cache'));
 
             heads[1] = aHe('th', ['Capacity', 'Used', 'Sent', 'Rcvd', 'Sent/s', 'Rcvd/s',
@@ -1412,7 +1412,7 @@
                 if (cache) {
                     var i = 0;
                     for (var code in zone.responses) {
-                        if (i++ < 5) continue;
+                        if (i++ < 9) continue;
                         cacheCount = (zone.responses[code] + zone.overCounts['maxIntegerSize'] * zone.overCounts[code]);
                         cacheTotal += cacheCount;
                         s = '{}{}'.format(s, aHe('td', cacheCount));
