@@ -68,6 +68,9 @@ ngx_http_vhost_traffic_status_display_prometheus_set_server_node(
                       &server, vtsn->stat_3xx_counter,
                       &server, vtsn->stat_4xx_counter,
                       &server, vtsn->stat_499_counter,
+                      &server, vtsn->stat_500_counter,
+                      &server, vtsn->stat_502_counter,
+                      &server, vtsn->stat_504_counter,
                       &server, vtsn->stat_5xx_counter,
                       &server, vtsn->stat_request_counter,
                       &server, (double)vtsn->stat_request_time_counter / 1000,
@@ -151,6 +154,10 @@ ngx_http_vhost_traffic_status_display_prometheus_set_server(ngx_http_request_t *
             vtscf->stats.stat_2xx_counter += vtsn->stat_2xx_counter;
             vtscf->stats.stat_3xx_counter += vtsn->stat_3xx_counter;
             vtscf->stats.stat_4xx_counter += vtsn->stat_4xx_counter;
+            vtscf->stats.stat_499_counter += vtsn->stat_499_counter;
+            vtscf->stats.stat_500_counter += vtsn->stat_500_counter;
+            vtscf->stats.stat_502_counter += vtsn->stat_502_counter;
+            vtscf->stats.stat_504_counter += vtsn->stat_504_counter;
             vtscf->stats.stat_5xx_counter += vtsn->stat_5xx_counter;
             vtscf->stats.stat_request_time_counter += vtsn->stat_request_time_counter;
             ngx_http_vhost_traffic_status_node_time_queue_merge(
@@ -209,6 +216,10 @@ ngx_http_vhost_traffic_status_display_prometheus_set_filter_node(
                       &filter, &filter_name, vtsn->stat_2xx_counter,
                       &filter, &filter_name, vtsn->stat_3xx_counter,
                       &filter, &filter_name, vtsn->stat_4xx_counter,
+                      &filter, &filter_name, vtsn->stat_499_counter,
+                      &filter, &filter_name, vtsn->stat_500_counter,
+                      &filter, &filter_name, vtsn->stat_502_counter,
+                      &filter, &filter_name, vtsn->stat_504_counter,
                       &filter, &filter_name, vtsn->stat_5xx_counter,
                       &filter, &filter_name, vtsn->stat_request_counter,
                       &filter, &filter_name, (double)vtsn->stat_request_time_counter / 1000,
@@ -328,6 +339,10 @@ ngx_http_vhost_traffic_status_display_prometheus_set_upstream_node(
                       &upstream, &upstream_server, vtsn->stat_2xx_counter,
                       &upstream, &upstream_server, vtsn->stat_3xx_counter,
                       &upstream, &upstream_server, vtsn->stat_4xx_counter,
+                      &upstream, &upstream_server, vtsn->stat_499_counter,
+                      &upstream, &upstream_server, vtsn->stat_500_counter,
+                      &upstream, &upstream_server, vtsn->stat_502_counter,
+                      &upstream, &upstream_server, vtsn->stat_504_counter,
                       &upstream, &upstream_server, vtsn->stat_5xx_counter,
                       &upstream, &upstream_server, vtsn->stat_request_counter,
                       &upstream, &upstream_server, (double)vtsn->stat_request_time_counter / 1000,
